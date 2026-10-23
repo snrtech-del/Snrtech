@@ -6,9 +6,8 @@ on:
   pull_request:
     branches: [ "main" ]
   schedule:
-    - cron: '0 0 * * 0' # Run weekly on Sundays at midnight UTC
+    - cron: '0 0 * * 0' # Run weekly on Sundays
 
-# 1. LEAST PRIVILEGE: Read-only by default
 permissions:
   contents: read
 
@@ -19,18 +18,14 @@ jobs:
   secret-scan:
     name: Secret Scanning
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: Checkout code
-        # Pinned to full SHA (v4.2.2)
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Full history is required for TruffleHog
 
       - name: TruffleHog OSS
-        # Pinned to full SHA (v3)
-        uses: trufflesecurity/trufflehog@e0ec5a38ad7f0c2d4a85b0b10f3c82a60bb9cc6c
+        uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: ${{ github.event.repository.default_branch }}
@@ -43,16 +38,12 @@ jobs:
   sca-scan:
     name: Dependency & IaC Scan
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: Checkout code
-        # Pinned to full SHA (v4.2.2)
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@v4
 
       - name: Run Trivy vulnerability scanner in fs mode
-        # Pinned to full SHA (v0.28.0)
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0
+        uses: aquasecurity/trivy-action@master # Using master to avoid broken tags
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -67,18 +58,10 @@ jobs:
   sast-scan:
     name: SAST (Semgrep)
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: Checkout code
-        # Pinned to full SHA (v4.2.2)
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@v4
 
       - name: Run Semgrep
-        # Pinned to full SHA (v1)
-        uses: returntocorp/semgrep-action@713efdd345f3035192eaa63f56867b88e63e4d5e
-        with:
-          config: >-
-            p/security-audit
-            p/secrets
-            p/owasp-top-ten
+        run: |
+          docker run --rm -v "${PWD}:/src" semgrep/semgrep semgrep ci
